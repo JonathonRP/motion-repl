@@ -1,12 +1,14 @@
 <script lang="ts" module>
-	import type { SvelteHTMLElements } from 'svelte';
+	import type { SvelteHTMLElements } from 'svelte/elements';
 	import Motion from './lib/Motion.svelte';
 	
 	const motion = new Proxy({} as { [K in keyof SvelteHTMLElements]: Motion }, {
-		get(_target, key) {
+		get(_target, key: string) {
 			return Motion
 		}
-	})
+	});
+
+  // motion. // -> ctrl + space/. auto complete is wrong both here and in template
 </script>
 
 <script lang="ts">
