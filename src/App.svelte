@@ -8,7 +8,7 @@
 		}
 	});
 
-  // motion. // -> ctrl + space/. auto complete is wrong both here and in template
+  // motion. // -> ctrl + space auto complete is wrong both here and in template
 </script>
 
 <script lang="ts">
