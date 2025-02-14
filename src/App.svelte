@@ -2,7 +2,7 @@
 	import type { SvelteHTMLElements } from 'svelte/elements';
 	import Motion from './lib/Motion.svelte';
 	
-	const motion = new Proxy({} as { [K in keyof SvelteHTMLElements]: Motion }, {
+	const motion = new Proxy({} as { [K in keyof SvelteHTMLElements]: typeof Motion }, {
 		get(_target, key: string) {
 			return Motion
 		}
