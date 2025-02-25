@@ -1,64 +1,43 @@
-<script lang="ts" module>
-	import type { SvelteHTMLElements } from 'svelte/elements';
-	import Motion from './lib/Motion.svelte';
-	
-	const motion = new Proxy({} as { [K in keyof SvelteHTMLElements]: typeof Motion }, {
-		get(_target, key: string) {
-			return Motion
-		}
-	});
-
-  // motion. // -> ctrl + space auto complete is wrong both here and in template
-</script>
-
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import { useCycle } from './lib/useCycle';
+  import { motion } from './lib/motion';
+
+  let stateText = $state("State 1");
+
+	const [animate, cycle] = useCycle([
+		{ scale: 0.8, backgroundColor: "#9EF4FF" },
+		{ scale: 1.2, backgroundColor: "#0FBFFF" }
+	]);
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <div class="card">
-    <motion.div />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
-
+<div style="min-height: 350px; height: fit-content; touch-action:none; background: #000; display: flex; justify-content: center; align-items: center; margin-block: calc(0.25rem * 2); padding: calc(0.25rem * 6); width: 94%">
+	<motion.div animate={$animate} onclick={() => {
+		cycle();
+		if (stateText === "State 1") {
+				stateText = "State 2";
+		} else {
+				stateText = "State 1";
+		}
+	}}
+		class="box">
+		{stateText}
+	</motion.div>
+</div>
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
+	:global(.box) {
+		color: #455;
+		width: 150px;
+		height: 150px;
+		background-color: #fff;
+		border-radius: 30px;
+		box-shadow: 0 0 10px #0000001a;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		font-size: 1.12rem;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		user-select: none;
+	}
 </style>
