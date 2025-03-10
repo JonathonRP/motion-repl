@@ -79,6 +79,11 @@ export function flushKeyframeResolvers() {
 	readAllKeyframes();
 	measureAllKeyframes();
 }
+
+export type OnKeyframesResolved<T extends string | number> = (
+	resolvedKeyframes: ResolvedKeyframes<T>,
+	finalKeyframe: T
+) => void;
 	
 export class KeyframeResolver<T extends string | number = any> {
 	name?: string;
@@ -121,7 +126,7 @@ export class KeyframeResolver<T extends string | number = any> {
 		onComplete: OnKeyframesResolved<T>,
 		name?: string,
 		motionValue?: MotionValue<T>,
-		element?: VisualElement<any>,
+		element?: Visual<any>,
 		isAsync = false
 	) {
 		this.unresolvedKeyframes = [...unresolvedKeyframes];

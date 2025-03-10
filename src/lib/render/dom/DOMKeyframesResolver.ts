@@ -1,6 +1,12 @@
+import { isNone } from "../../animation/utils/is-none";
 import type { MotionValue } from "../../value";
 import type { Visual } from "../Visual";
-import { KeyframeResolver, type UnresolvedKeyframes } from "../utils/KeyframesResolver";
+import { makeNoneKeyframesAnimatable } from "../html/utils/make-none-animatable";
+import { KeyframeResolver, type OnKeyframesResolved, type UnresolvedKeyframes } from "../utils/KeyframesResolver";
+import { getVariableValue } from "./utils/css-variables-conversion";
+import { isCSSVariableToken } from "./utils/is-css-variable";
+import { isNumOrPxType, positionalKeys, positionalValues } from "./utils/unit-conversion";
+import { findDimensionValueType } from "./value-types/dimension";
 
 export class DOMKeyframesResolver<T extends string | number> extends KeyframeResolver<T> {
 	declare name: string;

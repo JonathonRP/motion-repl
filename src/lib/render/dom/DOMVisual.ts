@@ -3,6 +3,7 @@ import type { MotionValue } from "../../value";
 import { Visual } from "../Visual";
 import type { HTMLRenderState } from "../html/types";
 import { DOMKeyframesResolver } from "./DOMKeyframesResolver";
+import type { DOMVisualOptions } from "./types";
 
 export abstract class DOMVisual<
     Instance extends HTMLElement = HTMLElement,
