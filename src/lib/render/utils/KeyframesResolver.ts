@@ -80,7 +80,7 @@ export function flushKeyframeResolvers() {
 	measureAllKeyframes();
 }
 	
-class KeyframeResolver<T extends string | number = any> {
+export class KeyframeResolver<T extends string | number = any> {
 	name?: string;
 	element?: Visual<any>;
 	finalKeyframe?: T;
