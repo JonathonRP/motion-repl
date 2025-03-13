@@ -1,6 +1,9 @@
+import { createSubscriber } from "svelte/reactivity";
 import type { MotionProps, MotionStyle } from "../motion/types";
 import { motionValue, type MotionValue } from "../value";
 import { isMotionValue } from "../value/utils/is-motion-value";
+import type { ResolvedValues, VisualOptions } from "./types";
+import type { AnimationState } from "./utils/animation-state";
 
 const propEventHandlers = [
 	'AnimationStart',
@@ -55,6 +58,15 @@ Options extends {} = {},
 	 */
 	current: Instance | null = null;
 
+    /**
+	 * The depth of this VisualElement within the overall VisualElement tree.
+	 */
+	// depth: number;
+
+	/**
+	 * The current render state of this VisualElement. Defined by inherting VisualElements.
+	 */
+	renderState: RenderState;
 	
 	/**
 	 * An object containing the latest static values for each of this VisualElement's
@@ -78,13 +90,13 @@ Options extends {} = {},
 	 * The options used to create this VisualElement. The Options type is defined
 	 * by the inheriting VisualElement and is passed straight through to the render functions.
 	 */
-	options;
+	readonly options: Options;
 
 	/**
 	 * A reference to the latest props provided to the VisualElement's host React component.
 	 */
-	props;
-	prevProps;
+	props: MotionProps;
+	prevProps?: MotionProps;
 
 	/**
 	 * A map of every subscription that binds the provided or generated
@@ -118,8 +130,8 @@ Options extends {} = {},
 		{
 			props,
 			visualState,
-		},
-		options = {}
+		}: VisualOptions<Instance, RenderState>,
+		options: Options = {} as any
 	) {
 		const { latestValues, renderState } = visualState;
 		this.latestValues = latestValues;
@@ -264,7 +276,7 @@ Options extends {} = {},
 	/**
 	 * Add a motion value and bind it to this visual element.
 	 */
-	addValue(key, value) {
+	addValue(key: string, value: MotionValue) {
 		// Remove existing value if it exists
 		const existingValue = this.values.get(key);
 
@@ -274,6 +286,27 @@ Options extends {} = {},
 			this.values.set(key, value);
 			this.latestValues[key] = value.get();
 		}
+	}
+
+    /**
+	 * Remove a motion value and unbind any active subscriptions.
+	 */
+	removeValue(key: string) {
+		this.values.delete(key);
+		const unsubscribe = this.valueSubscriptions.get(key);
+		if (unsubscribe) {
+			unsubscribe();
+			this.valueSubscriptions.delete(key);
+		}
+		delete this.latestValues[key];
+		this.removeValueFromRenderState(key, this.renderState);
+	}
+
+    /**
+	 * Check whether we have a motion value for this key
+	 */
+	hasValue(key: string) {
+		return this.values.has(key);
 	}
 
 	/**

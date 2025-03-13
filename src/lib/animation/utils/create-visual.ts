@@ -1,6 +1,11 @@
+import { HTMLVisual } from "../../render/html/HTMLVisual";
+import type { HTMLRenderState } from "../../render/html/types";
+import type { VisualOptions } from "../../render/types";
+import { visualElementStore } from '../../render/store.svelte';
+
 export function createDOMVisual(element: HTMLElement | SVGElement) {
 	const options = {
-		presenceContext: null,
+		// presenceContext: null,
 		props: {},
 		visualState: {
 			renderState: {
@@ -9,22 +14,14 @@ export function createDOMVisual(element: HTMLElement | SVGElement) {
 				transformKeys: [],
 				style: {},
 				vars: {},
-				attrs: {},
+				// attrs: {},
 			},
 			latestValues: {},
 		},
-	} satisfies VisualOptions<SVGElement | HTMLElement, SVGRenderState | HTMLRenderState>;
-	const node = isSVGElement(element) ? new SVGVisualElement(options) : new HTMLVisualElement(options);
+	} satisfies VisualOptions<HTMLElement, HTMLRenderState>;
+	const node = new HTMLVisual(options);
 
 	node.mount(element as any);
 
 	visualElementStore.set(element, node);
-}
-
-export const createDomVisual = (Component, options) => {
-	const visual = new HTMLVisual(options, {});
-	// this is handled in a feature class called animation.
-	visual.animationState ||= createAnimationState(visual);
-
-	return visual;
 }

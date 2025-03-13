@@ -7,7 +7,7 @@ import type { AnimationPlaybackControls, ValueAnimationOptions } from '../types'
 import type { UnresolvedKeyframes } from '../../render/utils/KeyframesResolver';
 import { MotionGlobalConfig } from '../../utils/GlobalConfig';
 import { instantAnimationState } from '../../utils/use-instant-transition-state';
-import type { VisualElement } from '../../render/VisualElement';
+import type { Visual } from '../../render/Visual';
 import { getFinalKeyframe } from '../animators/waapi/utils/get-final-keyframe';
 import { frame } from '../../frameloop/frame';
 import { MainThreadAnimation } from '../animators/MainThreadAnimation.svelte';
@@ -20,7 +20,7 @@ export const animateMotionValue =
     value: MotionValue<V>,
     target: V | UnresolvedKeyframes<V>,
     transition: Transition & { elapsed?: number } = {},
-    element?: VisualElement<any>,
+    element?: Visual<any>,
     isHandoff?: boolean
 ): StartAnimation =>
 (onComplete): AnimationPlaybackControls => {

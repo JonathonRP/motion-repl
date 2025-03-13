@@ -8,11 +8,11 @@ import { resolveVariant } from './resolve-dynamic-variants';
  * Set VisualElement's MotionValue, creating a new MotionValue for it if
  * it doesn't exist.
  */
-function setMotionValue<I>(visualElement: Visual<I>, key: string, value: string | number) {
-	if (visualElement.hasValue(key)) {
-		visualElement.getValue(key)!.set(value);
+function setMotionValue<I>(visual: Visual<I>, key: string, value: string | number) {
+	if (visual.hasValue(key)) {
+		visual.getValue(key)!.set(value);
 	} else {
-		visualElement.addValue(key, motionValue(value));
+		visual.addValue(key, motionValue(value));
 	}
 }
 

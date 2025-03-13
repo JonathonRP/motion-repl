@@ -124,12 +124,12 @@ export class DOMKeyframesResolver<T extends string | number> extends KeyframeRes
 			this.suspendedScrollY = window.pageYOffset;
 		}
 
-		this.measuredOrigin = positionalValues[name](
-			element.measureViewportBox(),
-			window.getComputedStyle(element.current)
-		);
+		// this.measuredOrigin = positionalValues[name](
+		// 	element.measureViewportBox(),
+		// 	window.getComputedStyle(element.current)
+		// );
 
-		unresolvedKeyframes[0] = this.measuredOrigin;
+		// unresolvedKeyframes[0] = this.measuredOrigin;
 
 		// Set final key frame to measure after next render
 		const measureKeyframe = unresolvedKeyframes[unresolvedKeyframes.length - 1];
@@ -150,10 +150,10 @@ export class DOMKeyframesResolver<T extends string | number> extends KeyframeRes
 		const finalKeyframeIndex = unresolvedKeyframes.length - 1;
 		const finalKeyframe = unresolvedKeyframes[finalKeyframeIndex];
 
-		unresolvedKeyframes[finalKeyframeIndex] = positionalValues[name](
-			element.measureViewportBox(),
-			window.getComputedStyle(element.current)
-		) as any;
+		// unresolvedKeyframes[finalKeyframeIndex] = positionalValues[name](
+		// 	element.measureViewportBox(),
+		// 	window.getComputedStyle(element.current)
+		// ) as any;
 
 		if (finalKeyframe !== null && this.finalKeyframe === undefined) {
 			this.finalKeyframe = finalKeyframe as T;

@@ -471,6 +471,6 @@ export class MotionValue<V = any> implements Writable<V> {
 /**
  * @internal
  */
-export function motionValue(init, options) {
+export function motionValue<V>(init: V, options?: MotionValueOptions): MotionValue<V> {
 	return new MotionValue(init, options);
 }

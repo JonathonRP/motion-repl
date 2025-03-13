@@ -8,14 +8,14 @@ import { isVariantLabel } from './is-variant-label';
 import type { AnimationType } from './types';
 import { resolveVariant } from './resolve-dynamic-variants';
 import { variantPriorityOrder } from './variant-props';
-import type { VisualElementAnimationOptions } from '../../animation/interfaces/types';
+import type { VisualAnimationOptions } from '../../animation/interfaces/types';
 import type { AnimationDefinition } from '../../animation/types';
 import { animateVisual } from '../../animation/interfaces/visual';
 import type { ResolvedValues } from '../types';
 
 export interface AnimationState {
 	animateChanges: (type?: AnimationType) => Promise<any>;
-	setActive: (type: AnimationType, isActive: boolean, options?: VisualElementAnimationOptions) => Promise<any>;
+	setActive: (type: AnimationType, isActive: boolean, options?: VisualAnimationOptions) => Promise<any>;
 	setAnimateFunction: (fn: any) => void;
 	getState: () => { [key: string]: AnimationTypeState };
 	reset: () => void;
@@ -23,7 +23,7 @@ export interface AnimationState {
 
 interface DefinitionAndOptions {
 	animation: AnimationDefinition;
-	options?: VisualElementAnimationOptions;
+	options?: VisualAnimationOptions;
 }
 
 export type AnimationList = string[] | TargetAndTransition[];
@@ -316,7 +316,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 		if (
 			isInitialRender &&
 			(props.initial === false || props.initial === props.animate) &&
-			!visualElement.manuallyAnimateOnMount
+			!visual.manuallyAnimateOnMount
 		) {
 			shouldAnimate = false;
 		}
@@ -333,7 +333,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 		if (state[type].isActive === isActive) return Promise.resolve();
 
 		// Propagate active change to children
-		visualElement.variantChildren?.forEach((child) => child.animationState?.setActive(type, isActive));
+		visual.variantChildren?.forEach((child) => child.animationState?.setActive(type, isActive));
 
 		state[type].isActive = isActive;
 

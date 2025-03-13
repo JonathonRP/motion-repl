@@ -1,5 +1,5 @@
 import { IsMounted } from 'runed';
-import { createDomVisual as createVisual } from '../../animation/utils/create-visual';
+import { createDomVisual as createVisual } from '../../render/dom/create-visual';
 import type { VisualState } from './use-visual-state.js';
 import type { MotionProps } from '../types';
 import { optimizedAppearDataAttribute } from '../../animation/optimized-appear/data-id';
