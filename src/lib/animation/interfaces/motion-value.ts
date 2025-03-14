@@ -11,7 +11,7 @@ import type { Visual } from '../../render/Visual';
 import { getFinalKeyframe } from '../animators/waapi/utils/get-final-keyframe';
 import { frame } from '../../frameloop/frame';
 import { MainThreadAnimation } from '../animators/MainThreadAnimation.svelte';
-import { GroupPlaybackControls } from '../GroupPlaybackControls';
+import { GroupPlaybackControls } from '../controls/Group';
 import { isTransitionDefined } from '../utils/is-transition-defined';
 
 export const animateMotionValue =
@@ -40,7 +40,7 @@ export const animateMotionValue =
 		let { elapsed = 0 } = transition;
 		elapsed = elapsed - secondsToMilliseconds(delay);
 
-		let options = {
+		let options: ValueAnimationOptions = {
 			keyframes: Array.isArray(target) ? target : [null, target],
 			ease: 'easeOut',
 			velocity: value.getVelocity(),
@@ -88,7 +88,7 @@ export const animateMotionValue =
 
 		let shouldSkip = false;
 
-		if (options.type === false || (options.duration === 0 && !options.repeatDelay)) {
+		if ((options as any).type === false || (options.duration === 0 && !options.repeatDelay)) {
 			options.duration = 0;
 
 			if (options.delay === 0) {
@@ -108,12 +108,12 @@ export const animateMotionValue =
 		 * this early check prevents the need to create an animation at all.
 		 */
 		if (shouldSkip && !isHandoff && value.get() !== undefined) {
-			const finalKeyframe = getFinalKeyframe<V>(options.keyframes, valueTransition);
+			const finalKeyframe = getFinalKeyframe<V>(options.keyframes as V[], valueTransition);
 
 			if (finalKeyframe !== undefined) {
 				frame.update(() => {
-					options.onUpdate(finalKeyframe);
-					options.onComplete();
+					options.onUpdate!(finalKeyframe);
+					options.onComplete!();
 				});
 
 				// We still want to return some animation controls here rather

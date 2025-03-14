@@ -1,16 +1,19 @@
-import type { ProgressTimeline } from '../render/dom/scroll/observe';
-// import { supportsScrollTimeline } from '../render/dom/scroll/supports';
-import type { AnimationPlaybackControls } from './types';
+import type { AnimationPlaybackControls } from "../types";
 
-type PropNames = 'time' | 'speed' | 'duration' | 'attachTimeline' | 'startTime';
+type PropNames = "time" | "speed" | "duration" | "attachTimeline" | "startTime"
 
-export class GroupPlaybackControls
-    implements AnimationPlaybackControls
+export type AcceptedAnimations =
+    | AnimationPlaybackControls
+    | AnimationPlaybackControls
+
+export type GroupedAnimations = AcceptedAnimations[]
+
+export class BaseGroupPlaybackControls implements AnimationPlaybackControls
 {
-    animations: AnimationPlaybackControls[];
+    animations: GroupedAnimations;
 
-    constructor(animations: Array<AnimationPlaybackControls | undefined>) {
-        this.animations = animations.filter(Boolean) as AnimationPlaybackControls[];
+    constructor(animations: Array<AcceptedAnimations | undefined>) {
+        this.animations = animations.filter(Boolean) as GroupedAnimations;
     }
 
     get finished() {
@@ -25,18 +28,18 @@ export class GroupPlaybackControls
     /**
      * TODO: Filter out cancelled or stopped animations before returning
      */
-    #getAll(propName: PropNames) {
+    private getAll(propName: PropNames) {
         return this.animations[0][propName] as any
     }
 
-    #setAll<V extends any>(propName: PropNames, newValue: V) {
+    private setAll<V extends any>(propName: PropNames, newValue: V) {
         for (let i = 0; i < this.animations.length; i++) {
             this.animations[i][propName] = newValue as any
         }
     }
 
     attachTimeline(
-        timeline: ProgressTimeline,
+        timeline: any,
         fallback: ((animation: AnimationPlaybackControls) => VoidFunction) | undefined
     ) {
         const subscriptions = this.animations.map((animation) => {
@@ -54,23 +57,23 @@ export class GroupPlaybackControls
     }
 
     get time() {
-        return this.#getAll("time")
+        return this.getAll("time")
     }
 
     set time(time: number) {
-        this.#setAll("time", time)
+        this.setAll("time", time)
     }
 
     get speed() {
-        return this.#getAll("speed")
+        return this.getAll("speed")
     }
 
     set speed(speed: number) {
-        this.#setAll("speed", speed)
+        this.setAll("speed", speed)
     }
 
     get startTime() {
-        return this.#getAll("startTime")
+        return this.getAll("startTime")
     }
 
     get duration() {
@@ -81,32 +84,32 @@ export class GroupPlaybackControls
         return max
     }
 
-    #runAll<K extends keyof Omit<AnimationPlaybackControls, PropNames | "then" | "state">>(
+    private runAll<K extends keyof Omit<AnimationPlaybackControls, PropNames | "then" | "state">>(
         cb: (input: AnimationPlaybackControls) => AnimationPlaybackControls[K]
     ) {
-        this.animations.forEach((controls) => controls[cb(controls)]())
+        this.animations.forEach((controls) => cb(controls)())
     }
 
     flatten() {
-        this.#runAll(controls => controls.flatten)
+        this.runAll(controls => controls.flatten)
     }
 
     play() {
-        this.#runAll(controls => controls.play)
+        this.runAll(controls => controls.play)
     }
 
     pause() {
-        this.#runAll(controls => controls.pause)
+        this.runAll(controls => controls.pause)
     }
 
     // Bound to accomodate common `return animation.stop` pattern
-    stop = () => this.#runAll(controls => controls.stop)
+    stop = () => this.runAll(controls => controls.stop)
 
     cancel() {
-        this.#runAll(controls => controls.cancel)
+        this.runAll(controls => controls.cancel)
     }
 
     complete() {
-        this.#runAll(controls => controls.complete)
+        this.runAll(controls => controls.complete)
     }
 }

@@ -51,7 +51,7 @@ export const makeUseVisualState =
 };
 
 function makeLatestValues(props: MotionProps) {
-  const values = {};
+  const values: ResolvedValues = {};
 
   // const motionValues = scrapeMotionValues(() => props, {});
   // for (const key in motionValues) {
@@ -60,7 +60,11 @@ function makeLatestValues(props: MotionProps) {
 
   let { initial, animate } = props;
 
-  const variantToSet = false ? animate : initial;
+  let isInitialAnimationBlocked = false;
+
+  isInitialAnimationBlocked = isInitialAnimationBlocked || initial === false;
+
+  const variantToSet = isInitialAnimationBlocked ? animate : initial;
 
   if (
     variantToSet &&
@@ -74,7 +78,7 @@ function makeLatestValues(props: MotionProps) {
 
       const { transitionEnd, transition, ...target } = resolved;
       for (const key in target) {
-        let valueTarget = target[key];
+        let valueTarget = target[key as keyof typeof target];
 
         if (Array.isArray(valueTarget)) {
           /**
@@ -86,10 +90,10 @@ function makeLatestValues(props: MotionProps) {
         }
 
         if (valueTarget !== null) {
-          values[key] = valueTarget;
+          values[key] = valueTarget as string | number;
         }
       }
-      for (const key in transitionEnd) values[key] = transitionEnd[key];
+      for (const key in transitionEnd) values[key] = transitionEnd[key as keyof typeof transitionEnd] as string | number;
     });
   }
 

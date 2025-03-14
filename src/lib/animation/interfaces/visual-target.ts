@@ -27,7 +27,7 @@ export function animateTarget(
 
 	if (transitionOverride) transition = transitionOverride;
 
-	const animations = [];
+	const animations: AnimationPlaybackControls[] = [];
 
 	const animationTypeState = type && visual.animationState && visual.animationState.getState()[type];
 

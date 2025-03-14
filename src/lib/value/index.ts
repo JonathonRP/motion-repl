@@ -73,7 +73,7 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @public
 	 */
-	update = (cb) => {
+	update = (cb: (value: V) => V): void => {
 		this.set(cb(this.get()));
 	};
 
@@ -94,29 +94,29 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	#current;
+	private current: V | undefined;
 
 	/**
 	 * The previous state of the `MotionValue`.
 	 *
 	 * @internal
 	 */
-	#prev;
+	private prev: V | undefined;
 
 	/**
 	 * The previous state of the `MotionValue` at the end of the previous frame.
 	 */
-	#prevFrameValue;
+	private prevFrameValue: V | undefined;
 
 	/**
 	 * The last time the `MotionValue` was updated.
 	 */
-	#updatedAt;
+	updatedAt: number;
 
 	/**
 	 * The time `prevFrameValue` was updated.
 	 */
-	#prevUpdatedAt;
+	prevUpdatedAt: number | undefined;
 
 	/**
 	 * Add a passive effect to this `MotionValue`.
@@ -127,13 +127,13 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	#passiveEffect;
-	#stopPassiveEffect;
+	private passiveEffect?: PassiveEffect<V>;
+	private stopPassiveEffect?: VoidFunction;
 
 	/**
 	 * A reference to the currently-controlling animation.
 	 */
-	animation;
+	animation?: AnimationPlaybackControls;
 
 	/**
 	 * Tracks whether this value can output a velocity. Currently this is only true
@@ -142,16 +142,16 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	#canTrackVelocity = null;
+	private canTrackVelocity: boolean | null = null;
 
 	/**
 	 * Tracks whether this value should be removed
 	 * @internal
 	 */
-	liveStyle;
+	liveStyle?: boolean;
 
-	#onSubscription = () => {};
-	#onUnsubscription = () => {};
+	private  onSubscription = () => {};
+	private onUnsubscription = () => {};
 
 	/**
 	 * @param init - The initiating value
@@ -161,20 +161,20 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	constructor(init, options = {}) {
+	constructor(init: V, options: MotionValueOptions = {}) {
 		this.setCurrent(init);
 		this.owner = options.owner;
 
 		const { startStopNotifier } = options;
 
 		if (startStopNotifier) {
-			this.#onSubscription = () => {
-				if (Object.entries(this.#events).reduce((acc, [_key, currEvent]) => acc + currEvent.getSize(), 0) === 0) {
+			this.onSubscription = () => {
+				if (Object.entries(this.events).reduce((acc, [_key, currEvent]) => acc + currEvent.getSize(), 0) === 0) {
 					const unsub = startStopNotifier();
-					this.#onUnsubscription = () => {};
+					this.onUnsubscription = () => {};
 					if (unsub) {
-						this.#onUnsubscription = () => {
-							if (Object.entries(this.#events).reduce((acc, [_key, currEvent]) => acc + currEvent.getSize(), 0) === 0) {
+						this.onUnsubscription = () => {
+							if (Object.entries(this.events).reduce((acc, [_key, currEvent]) => acc + currEvent.getSize(), 0) === 0) {
 								unsub();
 							}
 						};
@@ -184,21 +184,21 @@ export class MotionValue<V = any> implements Writable<V> {
 		}
 	}
 
-	setCurrent(current) {
+	setCurrent(current: V) {
 		this.current = current;
-		this.#updatedAt = time.now();
+		this.updatedAt = time.now();
 
-		if (this.#canTrackVelocity === null && current !== undefined) {
-			this.#canTrackVelocity = isFloat(this.current);
+		if (this.canTrackVelocity === null && current !== undefined) {
+			this.canTrackVelocity = isFloat(this.current);
 		}
 	}
 
-	setPrevFrameValue(prevFrameValue = this.current) {
-		this.#prevFrameValue = prevFrameValue;
-		this.#prevUpdatedAt = this.#updatedAt;
+	setPrevFrameValue(prevFrameValue: V | undefined = this.current) {
+		this.prevFrameValue = prevFrameValue;
+		this.prevUpdatedAt = this.updatedAt;
 	}
 
-	onChange = (subscription) => {
+	onChange = (subscription: Subscriber<V>): (() => void) => {
 		if (process.env.NODE_ENV !== 'production') {
 			warnOnce(false, `value.onChange(callback) is deprecated. Switch to value.on("change", callback).`);
 		}
@@ -208,31 +208,33 @@ export class MotionValue<V = any> implements Writable<V> {
 	/**
 	 * An object containing a SubscriptionManager for each active event.
 	 */
-	#events = {};
+	private events: {
+		[key: string]: SubscriptionManager<any>;
+	} = {};
 
-	on(
-		eventName,
-		callback
+	on<EventName extends keyof MotionValueEventCallbacks<V>>(
+		eventName: EventName,
+		callback: MotionValueEventCallbacks<V>[EventName]
 	) {
-		if (!this.#events[eventName]) {
-			this.#events[eventName] = new SubscriptionManager();
+		if (!this.events[eventName]) {
+			this.events[eventName] = new SubscriptionManager();
 		}
 
-		this.#onSubscription();
+		this.onSubscription();
 
-		const unsubscribe = this.#events[eventName].add(callback);
+		const unsubscribe = this.events[eventName].add(callback);
 
 		if (eventName === 'change') {
 			return () => {
 				unsubscribe();
-				this.#onUnsubscription();
+				this.onUnsubscription();
 
 				/**
 				 * If we have no more change listeners by the start
 				 * of the next frame, stop active animations.
 				 */
 				frame.read(() => {
-					if (!this.#events.change.getSize()) {
+					if (!this.events.change.getSize()) {
 						this.stop();
 					}
 				});
@@ -241,15 +243,15 @@ export class MotionValue<V = any> implements Writable<V> {
 
 		return () => {
 			unsubscribe();
-			this.#onUnsubscription();
+			this.onUnsubscription();
 		};
 	}
 
 	clearListeners() {
-		for (const eventManagers in this.#events) {
-			this.#events[eventManagers].clear();
+		for (const eventManagers in this.events) {
+			this.events[eventManagers].clear();
 		}
-		this.#onUnsubscription();
+		this.onUnsubscription();
 	}
 
 	/**
@@ -257,9 +259,9 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	attach(passiveEffect, stopPassiveEffect) {
-		this.#passiveEffect = passiveEffect;
-		this.#stopPassiveEffect = stopPassiveEffect;
+	attach(passiveEffect: PassiveEffect<V>, stopPassiveEffect: VoidFunction) {
+		this.passiveEffect = passiveEffect;
+		this.stopPassiveEffect = stopPassiveEffect;
 	}
 
 	/**
@@ -277,34 +279,34 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @public
 	 */
-	set(v, render = true) {
-		if (!render || !this.#passiveEffect) {
+	set(v: V, render = true) {
+		if (!render || !this.passiveEffect) {
 			this.updateAndNotify(v, render);
 		} else {
-			this.#passiveEffect(v, this.updateAndNotify);
+			this.passiveEffect(v, this.updateAndNotify);
 		}
 	}
 
-	setWithVelocity(prev, current, delta) {
+	setWithVelocity(prev: V, current: V, delta: number) {
 		this.set(current);
-		this.#prev = undefined;
-		this.#prevFrameValue = prev;
-		this.#prevUpdatedAt = this.#updatedAt - delta;
+		this.prev = undefined;
+		this.prevFrameValue = prev;
+		this.prevUpdatedAt = this.updatedAt - delta;
 	}
 
 	/**
 	 * Set the state of the `MotionValue`, stopping any active animations,
 	 * effects, and resets velocity to `0`.
 	 */
-	jump(v, endAnimation = true) {
+	jump(v: V, endAnimation = true) {
 		this.updateAndNotify(v);
-		this.#prev = v;
-		this.#prevUpdatedAt = this.#prevFrameValue = undefined;
+		this.prev = v;
+		this.prevUpdatedAt = this.prevFrameValue = undefined;
 		endAnimation && this.stop();
-		if (this.#stopPassiveEffect) this.#stopPassiveEffect();
+		if (this.stopPassiveEffect) this.stopPassiveEffect();
 	}
 
-	updateAndNotify = (v, render = true) => {
+	updateAndNotify = (v: V, render = true) => {
 		const currentTime = time.now();
 
 		/**
@@ -312,22 +314,22 @@ export class MotionValue<V = any> implements Writable<V> {
 		 * than the previous frame, then the we set the previous frame value
 		 * to current.
 		 */
-		if (this.#updatedAt !== currentTime) {
+		if (this.updatedAt !== currentTime) {
 			this.setPrevFrameValue();
 		}
 
-		this.#prev = this.current;
+		this.prev = this.current;
 
 		this.setCurrent(v);
 
 		// Update update subscribers
-		if (this.current !== this.#prev && this.#events.change) {
-			this.#events.change.notify(this.current);
+		if (this.current !== this.prev && this.events.change) {
+			this.events.change.notify(this.current);
 		}
 
 		// Update render subscribers
-		if (render && this.#events.renderRequest) {
-			this.#events.renderRequest.notify(this.current);
+		if (render && this.events.renderRequest) {
+			this.events.renderRequest.notify(this.current);
 		}
 	};
 
@@ -339,14 +341,14 @@ export class MotionValue<V = any> implements Writable<V> {
 	 * @public
 	 */
 	get() {
-		this.#onSubscription();
+		this.onSubscription();
 
 		if (collectMotionValues.current) {
 			collectMotionValues.current.push(this);
 		}
-		const curr = this.current;
+		const curr = this.current!;
 
-		this.#onUnsubscription();
+		this.onUnsubscription();
 		return curr;
 	}
 
@@ -354,7 +356,7 @@ export class MotionValue<V = any> implements Writable<V> {
 	 * @public
 	 */
 	getPrevious() {
-		return this.#prev;
+		return this.prev;
 	}
 
 	/**
@@ -368,24 +370,24 @@ export class MotionValue<V = any> implements Writable<V> {
 		const currentTime = time.now();
 
 		if (
-			!this.#canTrackVelocity ||
-			this.#prevFrameValue === undefined ||
-			currentTime - this.#updatedAt > MAX_VELOCITY_DELTA
+			!this.canTrackVelocity ||
+			this.prevFrameValue === undefined ||
+			currentTime - this.updatedAt > MAX_VELOCITY_DELTA
 		) {
 			return 0;
 		}
 
-		this.#onSubscription();
+		this.onSubscription();
 
-		const delta = Math.min(this.#updatedAt - this.#prevUpdatedAt, MAX_VELOCITY_DELTA);
+		const delta = Math.min(this.updatedAt - this.prevUpdatedAt!, MAX_VELOCITY_DELTA);
 
 		// Casts because of parseFloat's poor typing
 		const vel = velocityPerSecond(
-			Number.parseFloat(this.current) - Number.parseFloat(this.#prevFrameValue),
+			Number.parseFloat(this.current as any) - Number.parseFloat(this.prevFrameValue as any),
 			delta
 		);
 
-		this.#onUnsubscription();
+		this.onUnsubscription();
 		return vel;
 	}
 
@@ -403,23 +405,23 @@ export class MotionValue<V = any> implements Writable<V> {
 	 *
 	 * @internal
 	 */
-	start(startAnimation) {
+	start(startAnimation: StartAnimation) {
 		this.stop();
-		const { promise, resolve } = Promise.withResolvers();
+		const { promise, resolve } = Promise.withResolvers<void>();
 
 		this.hasAnimated = true;
 
 		this.animation = startAnimation(resolve);
 
-		if (this.#events.animationStart) {
-			this.#events.animationStart.notify();
+		if (this.events.animationStart) {
+			this.events.animationStart.notify();
 		}
 
 		return promise.then(() => {
-			if (this.#events.animationComplete) {
-				this.#events.animationComplete.notify();
+			if (this.events.animationComplete) {
+				this.events.animationComplete.notify();
 			}
-			this.#clearAnimation();
+			this.clearAnimation();
 		});
 	}
 	/**
@@ -430,11 +432,11 @@ export class MotionValue<V = any> implements Writable<V> {
 	stop() {
 		if (this.animation) {
 			this.animation.stop();
-			if (this.#events.animationCancel) {
-				this.#events.animationCancel.notify();
+			if (this.events.animationCancel) {
+				this.events.animationCancel.notify();
 			}
 		}
-		this.#clearAnimation();
+		this.clearAnimation();
 	}
 	/**
 	 * Returns `true` if this value is currently animating.
@@ -445,7 +447,7 @@ export class MotionValue<V = any> implements Writable<V> {
 		return !!this.animation;
 	}
 
-	#clearAnimation() {
+	private clearAnimation() {
 		delete this.animation;
 	}
 	/**
@@ -461,10 +463,10 @@ export class MotionValue<V = any> implements Writable<V> {
 		this.clearListeners();
 		this.stop();
 
-		if (this.#passiveEffect) {
-			this.#stopPassiveEffect?.();
+		if (this.passiveEffect) {
+			this.stopPassiveEffect?.();
 		}
-		this.#onUnsubscription();
+		this.onUnsubscription();
 	}
 }
 

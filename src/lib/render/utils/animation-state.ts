@@ -46,7 +46,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 	 * each active animation type into an object of resolved values for it.
 	 */
 	const buildResolvedTypeValues =
-		(type) => (acc, definition) => {
+		(type: AnimationType) => (acc: { [key: string]: any }, definition: string | TargetAndTransition | undefined) => {
 			const resolved = resolveVariant(
 				visual,
 				definition,
@@ -65,7 +65,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 	 * This just allows us to inject mocked animation functions
 	 * @internal
 	 */
-	function setAnimateFunction(makeAnimator) {
+	function setAnimateFunction(makeAnimator: typeof animateList) {
 		animate = makeAnimator(visual);
 	}
 
@@ -79,20 +79,20 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 	 * 3. Determine if any values have been removed from a type and figure out
 	 *    what to animate those to.
 	 */
-	function animateChanges(changedActiveType) {
+	function animateChanges(changedActiveType?: AnimationType) {
 		const { props } = visual;
 
 		/**
 		 * A list of animations that we'll build into as we iterate through the animation
 		 * types. This will get executed at the end of the function.
 		 */
-		const animations = [];
+		const animations: DefinitionAndOptions[] = [];
 
 		/**
 		 * Keep track of which values have been removed. Then, as we hit lower priority
 		 * animation types, we can check if they contain removed values and animate to that.
 		 */
-		const removedKeys = new Set();
+		const removedKeys = new Set<string>();
 
 		/**
 		 * A dictionary of all encountered keys. This is an object to let us build into and
@@ -133,7 +133,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 			 *
 			 * TODO: Can probably change this to a !isControllingVariants check
 			 */
-			let isInherited = prop !== props[type];
+			let isInherited = prop !== props[type] && propIsVariant;
 
 			/**
 			 *
@@ -155,7 +155,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 				// If we didn't and don't have any defined prop for this animation type
 				(!prop && !typeState.prevProp) ||
 				// Or if the prop doesn't define an animation
-				// isAnimationControls(prop) ||
+				isAnimationControls(prop) ||
 				typeof prop === 'boolean'
 			) {
 				continue;
@@ -206,7 +206,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 				...prevResolvedValues,
 				...resolvedValues,
 			};
-			const markToAnimate = (key) => {
+			const markToAnimate = (key: string) => {
 				shouldAnimateType = true;
 				if (removedKeys.has(key)) {
 					handledRemovedValues = true;
@@ -298,20 +298,20 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 		 * defined in the style prop, or the last read value.
 		 */
 		if (removedKeys.size) {
-			const fallbackAnimation = {};
+			const fallbackAnimation: ResolvedValues = {};
 			removedKeys.forEach((key) => {
-				const fallbackTarget = visualElement.getBaseTarget(key);
+				const fallbackTarget = visual.getBaseTarget(key);
 
-				const motionValue = visualElement.getValue(key);
+				const motionValue = visual.getValue(key);
 				if (motionValue) motionValue.liveStyle = true;
 
-				fallbackAnimation[key] = fallbackTarget ?? null;
+				fallbackAnimation[key] = fallbackTarget as string | number ?? null;
 			});
 
 			animations.push({ animation: fallbackAnimation });
 		}
 
-		let shouldAnimate = animations.length;
+		let shouldAnimate = Boolean(animations.length);
 
 		if (
 			isInitialRender &&
@@ -340,7 +340,7 @@ export function createAnimationState<I>(visual: Visual<I>): AnimationState {
 		const animations = animateChanges(type);
 
 		for (const key in state) {
-			state[key].protectedKeys = {};
+			state[key as keyof typeof state].protectedKeys = {};
 		}
 
 		return animations;

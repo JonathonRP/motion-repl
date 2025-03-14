@@ -1,9 +1,9 @@
 import type { TargetAndTransition, TargetResolver } from '../types';
-import type { VisualElement } from '../render/VisualElement';
+import type { Visual } from '../render/Visual';
 import type { Easing } from '../easing/types';
 import type { Driver } from './animators/drivers/types';
 import type { SVGPathProperties, VariantLabels } from '../motion/types';
-import type { SVGAttributes } from '../render/svg/types-attributes';
+// import type { SVGAttributes } from '../render/svg/types-attributes';
 import type { ProgressTimeline } from '../render/dom/scroll/observe';
 import type { MotionValue } from '../value';
 import type { KeyframeResolver, OnKeyframesResolved } from '../render/utils/KeyframesResolver';
@@ -49,13 +49,14 @@ export interface ValueAnimationOptions<V extends string | number = number> exten
 	name?: string;
 	from?: V;
 	isGenerator?: boolean;
+	allowFlatten?: boolean;
 }
 
 export interface ValueAnimationOptionsWithRenderContext<V extends string | number = number>
 	extends ValueAnimationOptions<V> {
 	KeyframeResolver?: typeof KeyframeResolver;
 	motionValue?: MotionValue<V>;
-	element?: VisualElement<unknown>;
+	element?: Visual<unknown>;
 }
 
 export interface AnimationScope<T = any> {
@@ -71,9 +72,9 @@ export type SVGPathTransitions = {
 	[K in keyof SVGPathProperties]: Transition;
 };
 
-export type SVGTransitions = {
-	[K in keyof SVGAttributes]: Transition;
-};
+// export type SVGTransitions = {
+// 	[K in keyof SVGAttributes]: Transition;
+// };
 
 export type VariableTransitions = {
 	[key: `--${string}`]: Transition;
@@ -81,7 +82,7 @@ export type VariableTransitions = {
 
 export type AnimationOptionsWithValueOverrides<V = any> = StyleTransitions &
 	SVGPathTransitions &
-	SVGTransitions &
+	// SVGTransitions &
 	VariableTransitions &
 	ValueAnimationTransition<V>;
 
@@ -117,6 +118,14 @@ export interface AnimationPlaybackControls {
 		timeline: ProgressTimeline,
 		fallback: ((animation: AnimationPlaybackControls) => VoidFunction) | undefined
 	) => VoidFunction;
+
+	/**
+     * Flattens the animation's easing curve to linear.
+     *
+     * This is currently for internal use only, and is used by scroll() to
+     * ensure an animation is being scrubbed by progress rather than eased time.
+     */
+    flatten: () => void
 }
 
 export type DynamicOption<T> = (i: number, total: number) => T;
@@ -146,9 +155,9 @@ export type StyleKeyframesDefinition = {
 	[K in keyof CSSStyleDeclarationWithTransform]?: ValueKeyframesDefinition;
 };
 
-export type SVGKeyframesDefinition = {
-	[K in keyof SVGAttributes]?: ValueKeyframesDefinition;
-};
+// export type SVGKeyframesDefinition = {
+// 	[K in keyof SVGAttributes]?: ValueKeyframesDefinition;
+// };
 
 export type VariableKeyframesDefinition = {
 	[key: `--${string}`]: ValueKeyframesDefinition;
@@ -159,7 +168,7 @@ export type SVGPathKeyframesDefinition = {
 };
 
 export type DOMKeyframesDefinition = StyleKeyframesDefinition &
-	SVGKeyframesDefinition &
+	// SVGKeyframesDefinition &
 	SVGPathKeyframesDefinition &
 	VariableKeyframesDefinition;
 
@@ -221,7 +230,7 @@ export interface AnimationControls {
 	 *
 	 * @internal
 	 */
-	subscribe(visualElement: VisualElement<unknown>): () => void;
+	subscribe(visualElement: Visual<unknown>): () => void;
 
 	/**
 	 * Starts an animation on all linked components.

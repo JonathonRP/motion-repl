@@ -106,7 +106,19 @@ export class MainThreadAnimation<T extends string | number> extends BaseAnimatio
 		this.resolver.scheduleResolve();
 	}
 
-	#initPlayback(keyframes: ResolvedKeyframes<T>) {
+	flatten() {
+        super.flatten()
+
+        // If we've already resolved the animation, re-initialise it
+        if (this._resolved) {
+            Object.assign(
+                this._resolved,
+                this.initPlayback(this._resolved.keyframes)
+            )
+        }
+    }
+
+	protected initPlayback(keyframes: ResolvedKeyframes<T>) {
 		const { type = 'keyframes', repeat = 0, repeatDelay = 0, repeatType, velocity = 0 } = this.options;
 
 		const generatorFactory = isGenerator(type) ? type : generators[type] || keyframesGeneratorFactory;
@@ -117,8 +129,8 @@ export class MainThreadAnimation<T extends string | number> extends BaseAnimatio
 		 *
 		 * 100 is chosen instead of 1 as it works nicer with spring animations.
 		 */
-		let mapPercentToKeyframes;
-		let mirroredGenerator;
+		let mapPercentToKeyframes: ((v: number) => T) | undefined;
+		let mirroredGenerator: KeyframeGenerator<T> | undefined;
 
 		if (generatorFactory !== keyframesGeneratorFactory && typeof keyframes[0] !== 'number') {
 			if (process.env.NODE_ENV !== 'production') {
@@ -128,9 +140,9 @@ export class MainThreadAnimation<T extends string | number> extends BaseAnimatio
 				);
 			}
 
-			mapPercentToKeyframes = pipe(percentToProgress, mix(keyframes[0], keyframes[1]));
+			mapPercentToKeyframes = pipe(percentToProgress, mix(keyframes[0], keyframes[1])) as (t: number) => T;
 
-			keyframes = [0, 100];
+			keyframes = [0 as T, 100 as T];
 		}
 
 		const generator = generatorFactory({ ...this.options, keyframes });
@@ -291,7 +303,7 @@ export class MainThreadAnimation<T extends string | number> extends BaseAnimatio
 						iterationProgress -= repeatDelay / resolvedDuration;
 					}
 				} else if (repeatType === 'mirror') {
-					frameGenerator = mirroredGenerator;
+					frameGenerator = mirroredGenerator!;
 				}
 			}
 
@@ -306,7 +318,7 @@ export class MainThreadAnimation<T extends string | number> extends BaseAnimatio
 		const state = isInDelayPhase ? { done: false, value: keyframes[0] } : frameGenerator.next(elapsed);
 
 		if (mapPercentToKeyframes) {
-			state.value = mapPercentToKeyframes(state.value);
+			state.value = mapPercentToKeyframes(state.value as number);
 		}
 
 		let { done } = state;

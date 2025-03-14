@@ -1,4 +1,4 @@
-import type { MotionProps } from "../../motion/types";
+import type { MotionProps, MotionStyle } from "../../motion/types";
 import type { MotionValue } from "../../value";
 import { Visual } from "../Visual";
 import type { HTMLRenderState } from "../html/types";

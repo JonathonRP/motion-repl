@@ -98,7 +98,7 @@ export abstract class BaseAnimation<T extends string | number, Resolved> impleme
 		return this.resolvedAt - this.createdAt > MAX_RESOLVE_DELAY ? this.resolvedAt : this.createdAt;
 	}
 
-	protected abstract initPlayback(keyframes, finalKeyframe?: T): Resolved | false;
+	protected abstract initPlayback(keyframes: ResolvedKeyframes<T>, finalKeyframe?: T): Resolved | false;
 
 	abstract play(): void;
 	abstract pause(): void;
@@ -182,6 +182,12 @@ export abstract class BaseAnimation<T extends string | number, Resolved> impleme
 	then(resolve: VoidFunction, reject?: VoidFunction) {
 		return this.currentFinishedPromise.then(resolve, reject);
 	}
+
+	flatten() {
+        if (!this.options.allowFlatten) return
+        this.options.type = "keyframes"
+        this.options.ease = "linear"
+    }
 
 	protected updateFinishedPromise() {
 		this.currentFinishedPromise = new Promise((resolve) => {
