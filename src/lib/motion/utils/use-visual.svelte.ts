@@ -6,12 +6,14 @@ import { optimizedAppearDataAttribute } from '../../animation/optimized-appear/d
 import { Visual } from '../../render/Visual';
 import { untrack } from 'svelte';
 
-export function useVisual<Instance, RenderState>(Component: string, visualState: VisualState<Instance, RenderState>, props: () => MotionProps) {
+export function useVisual<Instance, RenderState>(Component: string, visualState: () => VisualState<Instance, RenderState>, props: () => MotionProps) {
   const visualRef = $state<{ current: Visual<Instance> | null }>({ current: null });
 
   if (!visualRef.current && createVisual) {
     const options = $derived({
-      visualState,
+      get visualState() {
+        return visualState();
+      },
       get props() {
         return props();
       },
@@ -52,7 +54,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
    * Cache this value as we want to know whether HandoffAppearAnimations
    * was present on initial render - it will be deleted after this.
    */
-  const optimisedAppearId = props[optimizedAppearDataAttribute]!;
+  const optimisedAppearId = props()[optimizedAppearDataAttribute]!;
   let wantsHandoff =
     Boolean(optimisedAppearId) &&
     !window.MotionHandoffIsComplete?.(optimisedAppearId) &&

@@ -16,11 +16,11 @@
 	// }).map(([k, v]) => `${k}:${v}`).join(';'));
 
 	const visualState = $derived(useVisualState(props, false))
-	const visual = $derived.by(() => useVisual(
+	const visual = useVisual(
       	as,
-		visualState,
+		() => visualState,
       	() => props,
-    ));
+    );
 
 	$inspect(visual);
 </script>
