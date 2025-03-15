@@ -3,23 +3,24 @@ import { createDomVisual as createVisual } from '../../render/dom/create-visual'
 import type { VisualState } from './use-visual-state.js';
 import type { MotionProps } from '../types';
 import { optimizedAppearDataAttribute } from '../../animation/optimized-appear/data-id';
+import { Visual } from '../../render/Visual';
+import { untrack } from 'svelte';
 
-export function useVisual<Instance, RenderState>(Component: string, visualState: VisualState<Instance, RenderState>, props: MotionProps) {
-  const visualRef = $state({ current: null });
-  const createVisualInstance = () => {
-    if (!visualRef.current && createVisual) {
-      visualRef.current = createVisual(Component, {
-        visualState,
-        props,
-      });
-    }
-    return visualRef.current;
-  };
-  $effect(() => {
-    createVisualInstance(); // Call in an effect
-  });
+export function useVisual<Instance, RenderState>(Component: string, visualState: VisualState<Instance, RenderState>, props: () => MotionProps) {
+  const visualRef = $state<{ current: Visual<Instance> | null }>({ current: null });
 
-  const visual = $derived.by(() => visualRef.current);
+  if (!visualRef.current && createVisual) {
+    const options = $derived({
+      visualState,
+      get props() {
+        return props();
+      },
+    });
+
+    visualRef.current = createVisual(Component, options);
+  }
+
+  const visual = $derived(visualRef.current);
 
   // const initialLayoutGroupConfig = useContext(SwitchLayoutGroupContext);
 
@@ -34,6 +35,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
   const isMounted = new IsMounted();
   $effect.pre(() => {
+    props();
     /**
      * Check the component has already mounted before calling
      * `update` unnecessarily. This ensures we skip the initial update.
@@ -42,7 +44,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
       /**
        * make sure props update but untrack update because scroll and interpolate break from infinite effect call *greater then 9/10 calls.
        */
-      visual.update(props);
+      untrack(() => visual.update(props()));
     }
   });
 

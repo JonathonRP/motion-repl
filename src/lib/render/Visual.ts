@@ -2,8 +2,19 @@ import { createSubscriber } from "svelte/reactivity";
 import type { MotionProps, MotionStyle } from "../motion/types";
 import { motionValue, type MotionValue } from "../value";
 import { isMotionValue } from "../value/utils/is-motion-value";
-import type { ResolvedValues, VisualOptions } from "./types";
+import type { ResolvedValues, VisualEventCallbacks, VisualOptions } from "./types";
 import type { AnimationState } from "./utils/animation-state";
+import { KeyframeResolver } from "./utils/KeyframesResolver";
+import { SubscriptionManager } from "../utils/subscription-manager";
+import { cancelFrame, frame } from "../frameloop";
+import { transformProps } from "./html/utils/transform";
+import { time } from "../frameloop/sync-time";
+import { isNumericalString } from "../utils/is-numerical-string";
+import { isZeroValueString } from "../utils/is-zero-value-string";
+import { complex } from "../value/types/complex";
+import { getAnimatableNone } from "./dom/value-types/animatable-none";
+import { findValueType } from "./dom/value-types/find";
+import { resolveVariantFromProps } from "./utils/resolve-variants";
 
 const propEventHandlers = [
 	'AnimationStart',
@@ -33,6 +44,15 @@ Options extends {} = {},
 	 * that the value needs to be read from the Instance.
 	 */
 	abstract readValueFromInstance(instance: Instance, key: string, options: Options): string | number | null | undefined;
+
+    /**
+     * When a value has been removed from the VisualElement we use this to remove
+     * it from the inherting class' unique render state.
+     */
+    abstract removeValueFromRenderState(
+        key: string,
+        renderState: RenderState
+    ): void
 	
 	/**
 	 * Run before a React or VisualElement render, builds the latest motion
@@ -74,6 +94,31 @@ Options extends {} = {},
 	 */
 	latestValues: ResolvedValues;
 
+    /**
+     * Decides whether this VisualElement should animate in reduced motion
+     * mode.
+     *
+     * TODO: This is currently set on every individual VisualElement but feels
+     * like it could be set globally.
+     */
+    shouldReduceMotion: boolean | null = null
+
+    /**
+     * Normally, if a component is controlled by a parent's variants, it can
+     * rely on that ancestor to trigger animations further down the tree.
+     * However, if a component is created after its parent is mounted, the parent
+     * won't trigger that mount animation so the child needs to.
+     *
+     * TODO: This might be better replaced with a method isParentMounted
+     */
+    manuallyAnimateOnMount: boolean
+
+    /**
+     * This can be set by AnimatePresence to force components that mount
+     * at the same time as it to mount as if they have initial={false} set.
+     */
+    blockInitialAnimation: boolean
+
 	/**
 	 * A map of all motion values attached to this visual element. Motion
 	 * values are source of truth for any given animated value. A motion
@@ -85,6 +130,8 @@ Options extends {} = {},
 	 * The AnimationState, this is hydrated by the animation Feature.
 	 */
 	animationState?: AnimationState;
+
+    KeyframeResolver = KeyframeResolver
 
 	/**
 	 * The options used to create this VisualElement. The Options type is defined
@@ -102,48 +149,69 @@ Options extends {} = {},
 	 * A map of every subscription that binds the provided or generated
 	 * motion values onChange listeners to this visual element.
 	 */
-	#valueSubscriptions = new Map();
+	private valueSubscriptions = new Map<string, VoidFunction>();
+
+    /**
+     * When values are removed from all animation props we need to search
+     * for a fallback value to animate to. These values are tracked in baseTarget.
+     */
+    private baseTarget: ResolvedValues
+
+    /**
+     * Create an object of the values we initially animated from (if initial prop present).
+     */
+    private initialValues: ResolvedValues
 
 	/**
 	 * An object containing a SubscriptionManager for each active event.
 	 */
-	#events = {};
+	private events: {
+        [key: string]: SubscriptionManager<any>
+    } = {}
 
 	/**
 	 * An object containing an unsubscribe function for each prop event subscription.
 	 * For example, every "Update" event can have multiple subscribers via
 	 * VisualElement.on(), but only one of those can be defined via the onUpdate prop.
 	 */
-	#propEventSubscriptions = {};
+	private propEventSubscriptions: {
+        [key: string]: VoidFunction
+    } = {};
 
 	/**
 	 * hold subscription to hook into svelte reactivity graph
 	 */
-	#subscribe;
+	#subscribe: ReturnType<typeof createSubscriber>;
 
 	/**
 	 * hold update callback to hook into svelte reactivity graph
 	 */
-	#update;
+	#update: Parameters<Parameters<typeof createSubscriber>[0]>[0];
 
 	constructor(
 		{
 			props,
 			visualState,
+            blockInitialAnimation
 		}: VisualOptions<Instance, RenderState>,
 		options: Options = {} as any
 	) {
 		const { latestValues, renderState } = visualState;
 		this.latestValues = latestValues;
+        this.baseTarget = {...latestValues};
+        this.initialValues = props.initial ? { ...latestValues } : {}
 		this.renderState = renderState;
 		this.props = props;
 		this.options = options;
+        this.blockInitialAnimation = Boolean(blockInitialAnimation)
+
+        this.manuallyAnimateOnMount = true
 
 		this.#subscribe = createSubscriber((update) => {
 			this.#update = update;
-			// for (const eventKey in this.#events) {
-			// 	this.#events[eventKey].add(update);
-			// }
+			for (const eventKey in this.events) {
+				this.events[eventKey].add(update);
+			}
 
 			return () => {
 				this.unmount();
@@ -153,7 +221,7 @@ Options extends {} = {},
 		// this.#subscribe();
 	}
 
-	mount(instance) {
+	mount(instance: Instance) {
 		this.#subscribe();
 		this.current = instance;
 
@@ -161,8 +229,10 @@ Options extends {} = {},
 	}
 
 	unmount() {
-		// cancelFrame(this.notifyUpdate);
-		// cancelFrame(this.render);
+		cancelFrame(this.notifyUpdate);
+		cancelFrame(this.render);
+        this.valueSubscriptions.forEach((remove) => remove())
+        this.valueSubscriptions.clear()
 
 		for (const key in this.events) {
 			this.events[key].clear();
@@ -170,31 +240,27 @@ Options extends {} = {},
 		this.current = null;
 	}
 
-	#bindToMotionValue(key, value) {
-		if (this.#valueSubscriptions.has(key)) {
-			this.#valueSubscriptions.get(key)();
+	private bindToMotionValue(key: string, value: MotionValue) {
+		if (this.valueSubscriptions.has(key)) {
+			this.valueSubscriptions.get(key)!();
 		}
 
 		const valueIsTransform = transformProps.has(key);
 
-		const removeOnChange = value.on('change', (latestValue) => {
+		const removeOnChange = value.on('change', (latestValue: string | number) => {
 			this.latestValues[key] = latestValue;
 
 			this.props.onUpdate && frame.preRender(this.notifyUpdate);
-
-			if (valueIsTransform && this.projection) {
-				this.projection.isTransformDirty = true;
-			}
 		});
 
 		const removeOnRenderRequest = value.on('renderRequest', this.scheduleRender);
 
-		let removeSyncCheck;
+		let removeSyncCheck: VoidFunction | void;
 		if (window.MotionCheckAppearSync) {
 			removeSyncCheck = window.MotionCheckAppearSync(this, key, value);
 		}
 
-		this.#valueSubscriptions.set(key, () => {
+		this.valueSubscriptions.set(key, () => {
 			removeOnChange();
 			removeOnRenderRequest();
 			if (removeSyncCheck) removeSyncCheck();
@@ -211,14 +277,14 @@ Options extends {} = {},
 	render = () => {
 		if (!this.current) return;
 		this.triggerBuild();
-		this.renderInstance(this.current, this.renderState, this.props.style, this.projection);
+		this.renderInstance(this.current, this.renderState, this.props.style);
 	};
 
-	#renderScheduledAt = 0.0;
+	private renderScheduledAt = 0.0;
 	scheduleRender = () => {
 		const now = time.now();
-		if (this.#renderScheduledAt < now) {
-			this.#renderScheduledAt = now;
+		if (this.renderScheduledAt < now) {
+			this.renderScheduledAt = now;
 			frame.render(this.render, false, true);
 		}
 	};
@@ -227,7 +293,7 @@ Options extends {} = {},
 	 * Update the provided props. Ensure any newly-added motion values are
 	 * added to our map, old ones removed, and listeners updated.
 	 */
-	update(props) {
+	update(props: MotionProps) {
 		if (props.transformTemplate || this.props.transformTemplate) {
 			this.scheduleRender();
 		}
@@ -240,15 +306,15 @@ Options extends {} = {},
 		 */
 		for (let i = 0; i < propEventHandlers.length; i++) {
 			const key = propEventHandlers[i];
-			if (this.#propEventSubscriptions[key]) {
-				this.#propEventSubscriptions[key]();
-				delete this.#propEventSubscriptions[key];
+			if (this.propEventSubscriptions[key]) {
+				this.propEventSubscriptions[key]();
+				delete this.propEventSubscriptions[key];
 			}
 
-			const listenerName = ('on' + key);
+			const listenerName = ('on' + key) as keyof typeof props;
 			const listener = props[listenerName];
 			if (listener) {
-				this.#propEventSubscriptions[key] = this.on(key, listener);
+				this.propEventSubscriptions[key] = this.on(key, listener);
 			}
 		}
 
@@ -262,7 +328,7 @@ Options extends {} = {},
 	/**
 	 * Returns the variant definition with a given name.
 	 */
-	getVariant(name) {
+	getVariant(name: string) {
 		return this.props.variants ? this.props.variants[name] : undefined;
 	}
 
@@ -282,7 +348,7 @@ Options extends {} = {},
 
 		if (value !== existingValue) {
 			if (existingValue) this.removeValue(key);
-			this.#bindToMotionValue(key, value);
+			this.bindToMotionValue(key, value);
 			this.values.set(key, value);
 			this.latestValues[key] = value.get();
 		}
@@ -374,7 +440,8 @@ Options extends {} = {},
 		let valueFromInitial: ResolvedValues[string] | undefined | null;
 
 		if (typeof initial === 'string' || typeof initial === 'object') {
-			const variant = resolveVariantFromProps(this.props, initial as any, this.presenceContext?.custom);
+            let customInContext = false;
+			const variant = resolveVariantFromProps(this.props, initial as any, customInContext);
 			if (variant) {
 				valueFromInitial = variant[key as keyof typeof variant] as string;
 			}
@@ -401,20 +468,23 @@ Options extends {} = {},
 		return this.initialValues[key] !== undefined && valueFromInitial === undefined ? undefined : this.baseTarget[key];
 	}
 
-	on(
-		eventName,
-		callback
-	) {
-		if (!this.#events[eventName]) {
-			this.#events[eventName] = new SubscriptionManager();
+	on<EventName extends keyof VisualEventCallbacks>(
+        eventName: EventName,
+        callback: VisualEventCallbacks[EventName]
+    ) {
+		if (!this.events[eventName]) {
+			this.events[eventName] = new SubscriptionManager();
 		}
 
-		return this.#events[eventName].add(callback);
+		return this.events[eventName].add(callback);
 	}
 
-	notify(eventName, ...args) {
-		if (this.#events[eventName]) {
-			this.#events[eventName].notify(...args);
+	notify<EventName extends keyof VisualEventCallbacks>(
+        eventName: EventName,
+        ...args: any
+    ) {
+		if (this.events[eventName]) {
+			this.events[eventName].notify(...args);
 		}
 	}
 	
