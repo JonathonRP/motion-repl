@@ -5,6 +5,7 @@ import { isCSSVariableName } from '../../dom/utils/is-css-variable';
 import { transformProps } from "./transform";
 import { getValueAsType } from '../../dom/value-types/get-as-type';
 import { numberValueTypes } from '../../dom/value-types/number';
+import { buildTransform } from "./build-transform";
 
 export function buildHTMLStyles(
 	state: HTMLRenderState,
@@ -47,17 +48,17 @@ export function buildHTMLStyles(
 		}
 	}
 
-	// if (!latestValues.transform) {
-	// 	if (hasTransform || transformTemplate) {
-	// 		style.transform = buildTransform(latestValues, state.transform, transformTemplate);
-	// 	} else if (style.transform) {
-	// 		/**
-	// 		 * If we have previously created a transform but currently don't have any,
-	// 		 * reset transform style to none.
-	// 		 */
-	// 		style.transform = 'none';
-	// 	}
-	// }
+	if (!latestValues.transform) {
+		if (hasTransform || transformTemplate) {
+			style.transform = buildTransform(latestValues, state.transform, transformTemplate);
+		} else if (style.transform) {
+			/**
+			 * If we have previously created a transform but currently don't have any,
+			 * reset transform style to none.
+			 */
+			style.transform = 'none';
+		}
+	}
 
 	/**
 	 * Build a transformOrigin style. Uses the same defaults as the browser for

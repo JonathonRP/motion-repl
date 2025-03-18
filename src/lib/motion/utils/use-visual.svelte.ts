@@ -5,24 +5,25 @@ import type { MotionProps } from '../types';
 import { optimizedAppearDataAttribute } from '../../animation/optimized-appear/data-id';
 import { Visual } from '../../render/Visual';
 import { untrack } from 'svelte';
+import { microtask } from '../../frameloop/microtask';
 
-export function useVisual<Instance, RenderState>(Component: string, visualState: () => VisualState<Instance, RenderState>, props: () => MotionProps) {
-  const visualRef = $state<{ current: Visual<Instance> | null }>({ current: null });
+export function useVisual<Instance, RenderState>(Component: string, visualState: VisualState<Instance, RenderState>, props: MotionProps) {
+  // const visualRef = $state<{ current: Visual<Instance> | null }>({ current: null });
 
-  if (!visualRef.current && createVisual) {
-    const options = $derived({
-      get visualState() {
-        return visualState();
-      },
-      get props() {
-        return props();
-      },
-    });
+  // if (!visualRef.current && createVisual) {
+  //   const options = $derived({
+  //     get visualState() {
+  //       return visualState();
+  //     },
+  //     get props() {
+  //       return props();
+  //     },
+  //   });
 
-    visualRef.current = createVisual(Component, options);
-  }
+  //   visualRef.current = createVisual(Component, options);
+  // }
 
-  const visual = $derived(visualRef.current);
+  const visual = $derived(createVisual && createVisual(Component, { visualState, props }));
 
   // const initialLayoutGroupConfig = useContext(SwitchLayoutGroupContext);
 
@@ -37,7 +38,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
   const isMounted = new IsMounted();
   $effect.pre(() => {
-    props();
+    props;
     /**
      * Check the component has already mounted before calling
      * `update` unnecessarily. This ensures we skip the initial update.
@@ -46,7 +47,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
       /**
        * make sure props update but untrack update because scroll and interpolate break from infinite effect call *greater then 9/10 calls.
        */
-      untrack(() => visual.update(props()));
+      untrack(() => visual.update(props));
     }
   });
 
@@ -54,7 +55,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
    * Cache this value as we want to know whether HandoffAppearAnimations
    * was present on initial render - it will be deleted after this.
    */
-  const optimisedAppearId = props()[optimizedAppearDataAttribute]!;
+  const optimisedAppearId = props[optimizedAppearDataAttribute]!;
   let wantsHandoff =
     Boolean(optimisedAppearId) &&
     !window.MotionHandoffIsComplete?.(optimisedAppearId) &&
@@ -70,8 +71,8 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
     window.MotionIsMounted = true;
 
-    // visualElement.updateFeatures();
-    // microtask.render(() => visualElement.render);
+    // visual.updateFeatures();
+    microtask.render(() => visual.render);
 
     /**
      * Ideally this function would always run in a useEffect.
@@ -121,9 +122,9 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
     if (wantsHandoff) {
       // This ensures all future calls to animateChanges() in this component will run in useEffect
-      // queueMicrotask(() => {
-      // 	window.MotionHandoffMarkAsComplete?.(optimisedAppearId);
-      // });
+      queueMicrotask(() => {
+      	window.MotionHandoffMarkAsComplete?.(optimisedAppearId);
+      });
 
       wantsHandoff = false;
     }
