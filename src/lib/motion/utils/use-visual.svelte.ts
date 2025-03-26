@@ -3,7 +3,6 @@ import { createDomVisual as createVisual } from '../../render/dom/create-visual'
 import type { VisualState } from './use-visual-state.js';
 import type { MotionProps } from '../types';
 import { optimizedAppearDataAttribute } from '../../animation/optimized-appear/data-id';
-import { Visual } from '../../render/Visual';
 import { untrack } from 'svelte';
 import { microtask } from '../../frameloop/microtask';
 
@@ -37,7 +36,8 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
   // }
 
   const isMounted = new IsMounted();
-  $effect.pre(() => {
+  $inspect(props)
+  $effect(() => {
     props;
     /**
      * Check the component has already mounted before calling
