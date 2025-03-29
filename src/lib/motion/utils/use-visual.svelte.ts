@@ -22,7 +22,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
   //   visualRef.current = createVisual(Component, options);
   // }
 
-  const visual = $derived(createVisual && createVisual(Component, { visualState, props }));
+  const visual = createVisual && createVisual(Component, { visualState, props });
 
   // const initialLayoutGroupConfig = useContext(SwitchLayoutGroupContext);
 
@@ -63,15 +63,15 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
   // $inspect(presenceContext);
 
-  $effect(() => {
+  $effect.pre(() => {
     // const logger = console.context('use-visual-element');
-    // $inspect(presenceContext).with(logger.info);
+    // $inspect(visual).with(logger.info);
 
     if (!visual) return;
 
     window.MotionIsMounted = true;
 
-    // visual.updateFeatures();
+    visual.updateFeatures();
     microtask.render(() => visual.render);
 
     /**
@@ -115,6 +115,9 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
   $effect(() => {
     if (!visual) return;
+
+    // const logger = console.context('use-visual-element');
+    // $inspect(visual).with(logger.info);
 
     if (!wantsHandoff && visual.animationState) {
       visual.animationState.animateChanges();

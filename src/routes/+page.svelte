@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { useCycle } from './lib/useCycle';
-  import { motion } from './lib/motion';
+  import { useCycle } from '../lib/useCycle';
+  import { motion } from '../lib/motion';
 
   let stateText = $state("State 1");
 
@@ -13,14 +13,19 @@
 <div style="min-height: 350px; height: fit-content; touch-action:none; display: flex; justify-content: center; align-items: center;">
 	<div style="background: #000; border-radius: 0.5rem; border-style: solid; border-width: 1px; border-color: #0404;">
 		<div style=" margin-block: calc(0.25rem * 2); padding: calc(0.25rem * 6); width: 94%">
-		<motion.div animate={$animate} onclick={() => {
-			cycle();
-			if (stateText === "State 1") {
-					stateText = "State 2";
-			} else {
-					stateText = "State 1";
-			}
-		}}
+		<motion.div
+			animate={$animate}
+			transition={{
+				duration: 0.3,
+			}}
+			onTap={() => {
+				cycle();
+				if (stateText === "State 1") {
+						stateText = "State 2";
+				} else {
+						stateText = "State 1";
+				}
+			}}
 			class="box">
 			{stateText}
 		</motion.div>

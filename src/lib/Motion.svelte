@@ -16,18 +16,25 @@
 	// 	'background-color': animated.bg.current
 	// }).map(([k, v]) => `${k}:${v}`).join(';'));
 
-	const configAndProps = $derived({
-		...props,
-	});
+	const configAndProps = $derived(Object.assign(
+		props,
+	));
 
-	$inspect(props, configAndProps)
+	$inspect(props, configAndProps);
 
-	const visualState = $derived(useVisualState(configAndProps, false))
-	const visual = $derived(isBrowser && useVisual(
+	const visualState = useVisualState(props, false);
+
+	const context = {
+		visual: null
+	} as any;
+
+	// $effect.pre(() => {
+		context.visual = useVisual(
       	as,
 		visualState,
-      	props,
-    ) || undefined);
+      	configAndProps,
+    );
+	// })
 
 	// $inspect(visual);
 </script>
@@ -35,7 +42,7 @@
 <!-- style={visual} -->
 <svelte:element this={as} bind:this={() => ref, (v) => {
 	visualState && visualState.mount && visualState.mount(v);
-	visual && visual.mount(v);
+	context.visual && context.visual.mount(v);
 	ref = v;
 }} {...rest}>
 	{@render children?.()}

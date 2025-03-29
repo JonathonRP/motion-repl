@@ -4,6 +4,7 @@ import type { AnimationControls } from '../animation/types';
 import type { Variants, Target, Transition, TargetAndTransition, Omit, MakeCustomValueType } from '../types';
 import type { Snippet } from 'svelte';
 import type { EventProps } from '../render/types';
+import type { TapHandlers } from '../gestures/types';
 
 /**
  * Either a string, or array of strings, that reference variants defined via the `variants` prop.
@@ -249,7 +250,7 @@ export interface MotionProps
 	extends AnimationProps,
 		EventProps,
 		// PanHandlers,
-		// TapHandlers,
+		TapHandlers,
 		// HoverHandlers,
 		// FocusHandlers,
 		// ViewportProps,

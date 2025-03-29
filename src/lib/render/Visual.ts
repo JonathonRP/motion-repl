@@ -15,6 +15,8 @@ import { complex } from "../value/types/complex";
 import { getAnimatableNone } from "./dom/value-types/animatable-none";
 import { findValueType } from "./dom/value-types/find";
 import { resolveVariantFromProps } from "./utils/resolve-variants";
+import type { FeatureDefinitions } from "../motion/features/types";
+import { featureDefinitions } from "../motion/features/definitions";
 
 const propEventHandlers = [
 	'AnimationStart',
@@ -26,10 +28,15 @@ const propEventHandlers = [
 	'LayoutAnimationComplete',
 ] as const;
 
+type ExtractFeature<T extends FeatureDefinitions[keyof FeatureDefinitions]> =
+	T extends FeatureDefinitions[keyof FeatureDefinitions]
+		? T[Exclude<keyof T, 'isEnabled' | 'MeasureLayout' | 'ProjectionNode'>]
+		: never;
+
 export abstract class Visual<
-Instance,
-RenderState = unknown,
-Options extends {} = {},
+	Instance,
+	RenderState = unknown,
+	Options extends {} = {},
 > {
 	/**
 	 * When a value has been removed from all animation props we need to
@@ -144,6 +151,13 @@ Options extends {} = {},
 	 */
 	props: MotionProps;
 	prevProps?: MotionProps;
+
+	/**
+	 * Cleanup functions for active features (hover/tap/exit etc)
+	 */
+	private features: {
+		[K in keyof FeatureDefinitions]?: InstanceType<ExtractFeature<FeatureDefinitions[K]>>;
+	} = {};
 
 	/**
 	 * A map of every subscription that binds the provided or generated
@@ -266,6 +280,38 @@ Options extends {} = {},
 			if (removeSyncCheck) removeSyncCheck();
 			if (value.owner) value.stop();
 		});
+	}
+
+	updateFeatures() {
+		let key: keyof typeof featureDefinitions = 'animation';
+
+		for (key in featureDefinitions) {
+			const featureDefinition = featureDefinitions[key];
+
+			if (!featureDefinition) continue;
+
+			const { isEnabled, Feature: FeatureConstructor } = featureDefinition;
+
+			/**
+			 * If this feature is enabled but not active, make a new instance.
+			 */
+			if (!this.features[key] && FeatureConstructor && isEnabled(this.props)) {
+				this.features[key] = new FeatureConstructor(this as Visual<HTMLElement>) as any;
+			}
+
+			/**
+			 * If we have a feature, mount or update it.
+			 */
+			if (this.features[key]) {
+				const feature = this.features[key]!;
+				if (feature.isMounted) {
+					feature.update();
+				} else {
+					feature.mount();
+					feature.isMounted = true;
+				}
+			}
+		}
 	}
 
 	notifyUpdate = () => this.notify('Update', this.latestValues);
