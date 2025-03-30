@@ -16,9 +16,9 @@
 	// 	'background-color': animated.bg.current
 	// }).map(([k, v]) => `${k}:${v}`).join(';'));
 
-	const configAndProps = $derived(Object.assign(
+	const configAndProps = Object.assign(
 		props,
-	));
+	);
 
 	$inspect(props, configAndProps);
 
@@ -41,8 +41,8 @@
 
 <!-- style={visual} -->
 <svelte:element this={as} bind:this={() => ref, (v) => {
-	visualState && visualState.mount && visualState.mount(v);
-	context.visual && context.visual.mount(v);
+	v && visualState && visualState.mount && visualState.mount(v);
+	context.visual && v ? context.visual.mount(v) : context.visual.unmount();
 	ref = v;
 }} {...rest}>
 	{@render children?.()}

@@ -7,7 +7,7 @@ const featureProps = {
 	// drag: ['drag', 'dragControls'],
 	// focus: ['whileFocus'],
 	// hover: ['whileHover', 'onHoverStart', 'onHoverEnd'],
-	// tap: ['whileTap', 'onTap', 'onTapStart', 'onTapCancel'],
+	tap: ['whileTap', 'onTap', 'onTapStart', 'onTapCancel'],
 	// pan: ['onPan', 'onPanStart', 'onPanSessionStart', 'onPanEnd'],
 	// inView: ['whileInView', 'onViewportEnter', 'onViewportLeave'],
 	// layout: ['layout', 'layoutId'],

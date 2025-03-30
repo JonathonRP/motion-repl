@@ -63,7 +63,7 @@ export function useVisual<Instance, RenderState>(Component: string, visualState:
 
   // $inspect(presenceContext);
 
-  $effect.pre(() => {
+  $effect(() => {
     // const logger = console.context('use-visual-element');
     // $inspect(visual).with(logger.info);
 
