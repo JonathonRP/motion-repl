@@ -1,4 +1,4 @@
-import type { Visual } from "../../render/Visual";
+import type { Visual } from "../../render/Visual.svelte";
 import { resolveVariant } from "../../render/utils/resolve-dynamic-variants";
 import type { AnimationDefinition } from "../types";
 import type { VisualAnimationOptions } from "./types";

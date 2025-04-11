@@ -1,6 +1,6 @@
 import type { MotionProps } from '../../motion/types';
 import type { TargetAndTransition, TargetResolver } from '../../types';
-import type { Visual } from '../Visual';
+import type { Visual } from '../Visual.svelte';
 import type { ResolvedValues } from '../types';
 
 function getValueState<I>(visualElement?: Visual<I>): [ResolvedValues, ResolvedValues] {

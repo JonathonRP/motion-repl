@@ -149,15 +149,15 @@ export abstract class Visual<
 	/**
 	 * A reference to the latest props provided to the VisualElement's host React component.
 	 */
-	props: MotionProps;
-	prevProps?: MotionProps;
+	props: MotionProps = $state<MotionProps>()!;
+	prevProps?: MotionProps = $state();
 
 	/**
 	 * Cleanup functions for active features (hover/tap/exit etc)
 	 */
 	private features: {
 		[K in keyof FeatureDefinitions]?: InstanceType<ExtractFeature<FeatureDefinitions[K]>>;
-	} = {};
+	} = $state({});
 
 	/**
 	 * A map of every subscription that binds the provided or generated
@@ -181,7 +181,7 @@ export abstract class Visual<
 	 */
 	private events: {
         [key: string]: SubscriptionManager<any>
-    } = {}
+    } = $state({})
 
 	/**
 	 * An object containing an unsubscribe function for each prop event subscription.
@@ -190,17 +190,17 @@ export abstract class Visual<
 	 */
 	private propEventSubscriptions: {
         [key: string]: VoidFunction
-    } = {};
+    } = $state({});
 
 	/**
 	 * hold subscription to hook into svelte reactivity graph
 	 */
-	#subscribe: ReturnType<typeof createSubscriber>;
+	// #subscribe: ReturnType<typeof createSubscriber>;
 
 	/**
 	 * hold update callback to hook into svelte reactivity graph
 	 */
-	#update: Parameters<Parameters<typeof createSubscriber>[0]>[0];
+	// #update: Parameters<Parameters<typeof createSubscriber>[0]>[0];
 
 	constructor(
 		{
@@ -221,22 +221,23 @@ export abstract class Visual<
 
         this.manuallyAnimateOnMount = true
 
-		this.#subscribe = createSubscriber((update) => {
-			this.#update = update;
-			for (const eventKey in this.events) {
-				this.events[eventKey].add(update);
-			}
+		// this.#subscribe = createSubscriber((update) => {
+		// 	console.log('subscribe')
+		// 	this.#update = update;
+		// 	for (const eventKey in this.events) {
+		// 		this.events[eventKey].add(update);
+		// 	}
 
-			return () => {
-				this.unmount();
-			};
-		});
+		// 	return () => {
+		// 		this.unmount();
+		// 	};
+		// });
 
 		// this.#subscribe();
 	}
 
 	mount(instance: Instance) {
-		this.#subscribe();
+		// this.#subscribe();
 		this.current = instance;
 
 		this.update(this.props);
@@ -364,7 +365,7 @@ export abstract class Visual<
 			}
 		}
 
-		this.#update?.();
+		// this.#update?.();
 	}
 
 	getProps() {
@@ -518,6 +519,7 @@ export abstract class Visual<
         eventName: EventName,
         callback: VisualEventCallbacks[EventName]
     ) {
+		// this.#subscribe();
 		if (!this.events[eventName]) {
 			this.events[eventName] = new SubscriptionManager();
 		}

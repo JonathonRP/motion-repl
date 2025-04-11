@@ -1,4 +1,4 @@
-import type { Visual } from "../../render/Visual";
+import type { Visual } from "../../render/Visual.svelte";
 import { isWillChangeMotionValue } from "./is";
 
 export function addValueToWillChange<I>(visual: Visual<I>, key: string) {

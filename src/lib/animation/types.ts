@@ -1,5 +1,5 @@
 import type { TargetAndTransition, TargetResolver } from '../types';
-import type { Visual } from '../render/Visual';
+import type { Visual } from '../render/Visual.svelte';
 import type { Easing } from '../easing/types';
 import type { Driver } from './animators/drivers/types';
 import type { SVGPathProperties, VariantLabels } from '../motion/types';

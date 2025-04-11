@@ -1,5 +1,5 @@
 import { isAnimationControls } from "../../../animation/utils/is-animation-controls";
-import type { Visual } from "../../../render/Visual";
+import type { Visual } from "../../../render/Visual.svelte";
 import { createAnimationState } from "../../../render/utils/animation-state";
 import { Feature } from "../Feature";
 

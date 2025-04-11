@@ -1,7 +1,7 @@
 import type { MotionValue } from '../../../value';
 import { transformPropOrder } from '../../html/utils/transform';
 import type { Box } from '../../../projection/geometry/types';
-import type { Visual } from '../../Visual';
+import type { Visual } from '../../Visual.svelte';
 import type { ValueType } from '../../../value/types/types';
 import { number } from '../../../value/types/numbers';
 import { px } from '../../../value/types/numbers/units';

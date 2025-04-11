@@ -1,7 +1,7 @@
 import type { TargetAndTransition, TargetResolver } from '../../types';
 import { resolveFinalValueInKeyframes } from '../../utils/resolve-value';
 import { motionValue } from '../../value';
-import type { Visual } from '../Visual';
+import type { Visual } from '../Visual.svelte';
 import { resolveVariant } from './resolve-dynamic-variants';
 
 /**

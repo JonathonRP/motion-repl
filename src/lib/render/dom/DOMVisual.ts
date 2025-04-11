@@ -1,6 +1,6 @@
 import type { MotionProps, MotionStyle } from "../../motion/types";
 import type { MotionValue } from "../../value";
-import { Visual } from "../Visual";
+import { Visual } from "../Visual.svelte";
 import type { HTMLRenderState } from "../html/types";
 import { DOMKeyframesResolver } from "./DOMKeyframesResolver";
 import type { DOMVisualOptions } from "./types";

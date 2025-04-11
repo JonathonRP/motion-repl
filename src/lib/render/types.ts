@@ -2,7 +2,7 @@ import type { AnimationDefinition } from "../animation/types";
 import type { MotionProps } from "../motion/types";
 import type { VisualState } from "../motion/utils/use-visual-state";
 import type { Axis, Box } from "../projection/geometry/types";
-import type { Visual } from "./Visual";
+import type { Visual } from "./Visual.svelte";
 
 export type VisualOptions<Instance, RenderState = any> = {
 	visualState: VisualState<Instance, RenderState>;

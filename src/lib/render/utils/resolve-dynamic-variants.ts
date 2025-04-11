@@ -1,4 +1,4 @@
-import type { Visual } from "../Visual";
+import type { Visual } from "../Visual.svelte";
 import { resolveVariantFromProps } from "./resolve-variants";
 import type { TargetAndTransition, TargetResolver } from "../../types";
 

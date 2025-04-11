@@ -1,6 +1,6 @@
 import { isNone } from "../../animation/utils/is-none";
 import type { MotionValue } from "../../value";
-import type { Visual } from "../Visual";
+import type { Visual } from "../Visual.svelte";
 import { makeNoneKeyframesAnimatable } from "../html/utils/make-none-animatable";
 import { KeyframeResolver, type OnKeyframesResolved, type UnresolvedKeyframes } from "../utils/KeyframesResolver";
 import { getVariableValue } from "./utils/css-variables-conversion";

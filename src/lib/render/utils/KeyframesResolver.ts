@@ -1,6 +1,6 @@
 import { frame } from '../../frameloop';
 import type { MotionValue } from '../../value';
-import type { Visual } from '../Visual';
+import type { Visual } from '../Visual.svelte';
 import { removeNonTranslationalTransform } from '../dom/utils/unit-conversion';
 
 export type UnresolvedKeyframes<T extends string | number> = Array<T | null>;

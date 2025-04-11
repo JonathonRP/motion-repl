@@ -65,6 +65,7 @@ export class AnimationFrames {
 	#fps = $state(0);
 	#running = $state(false);
 	#window = defaultWindow;
+	// #subscribe: ReturnType<typeof createSubscriber>;
 
 	constructor(callback: (params: RafCallbackParams) => void, options: AnimationFramesOptions = {}) {
 		if (options.window) this.#window = options.window;
@@ -74,6 +75,20 @@ export class AnimationFrames {
 		this.start = this.start.bind(this);
 		this.stop = this.stop.bind(this);
 		this.toggle = this.toggle.bind(this);
+
+		// this.#subscribe = createSubscriber(() => {
+		// 	console.log('subscribe');
+
+		// 	$effect(() => {
+		// 		if(options.immediate ?? true) {
+		// 			untrack(this.start);
+		// 		}
+
+		// 		return this.stop;
+		// 	});
+		// });
+
+		// this.#subscribe();
 
 		$effect.root(() => {
 			$effect(() => {
@@ -87,7 +102,6 @@ export class AnimationFrames {
 	}
 
 	#loop(timestamp: DOMHighResTimeStamp): void {
-		// this.#subscribe();
 		if (!this.#running || !this.#window) return;
 
 		if (this.#previousTimestamp === null) {
@@ -105,6 +119,7 @@ export class AnimationFrames {
 		this.#previousTimestamp = timestamp;
 		this.#callback({ delta, timestamp });
 		this.#frame = this.#window.requestAnimationFrame(this.#loop.bind(this));
+		// this.#subscribe();
 	}
 
 	start(): void {

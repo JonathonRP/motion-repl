@@ -7,7 +7,7 @@ import type { AnimationPlaybackControls, ValueAnimationOptions } from '../types'
 import type { UnresolvedKeyframes } from '../../render/utils/KeyframesResolver';
 import { MotionGlobalConfig } from '../../utils/GlobalConfig';
 import { instantAnimationState } from '../../utils/use-instant-transition-state';
-import type { Visual } from '../../render/Visual';
+import type { Visual } from '../../render/Visual.svelte';
 import { getFinalKeyframe } from '../animators/waapi/utils/get-final-keyframe';
 import { frame } from '../../frameloop/frame';
 import { MainThreadAnimation } from '../animators/MainThreadAnimation.svelte';

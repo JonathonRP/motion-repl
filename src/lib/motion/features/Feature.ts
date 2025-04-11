@@ -1,4 +1,4 @@
-import type { Visual } from '../../render/Visual';
+import type { Visual } from '../../render/Visual.svelte';
 
 export abstract class Feature<I> {
 	isMounted = false;

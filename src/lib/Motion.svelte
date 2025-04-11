@@ -16,9 +16,9 @@
 	// 	'background-color': animated.bg.current
 	// }).map(([k, v]) => `${k}:${v}`).join(';'));
 
-	const configAndProps = Object.assign(
-		props,
-	);
+	const configAndProps = {
+		...props,
+	};
 
 	$inspect(props, configAndProps);
 

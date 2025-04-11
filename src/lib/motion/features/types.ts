@@ -1,5 +1,5 @@
 import type { MotionProps } from "../types";
-import type { Visual } from "../../render/Visual";
+import type { Visual } from "../../render/Visual.svelte";
 import type { Feature } from "./Feature";
 
 export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;

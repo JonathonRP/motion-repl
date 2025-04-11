@@ -1,6 +1,6 @@
 import { transformProps } from '../../render/html/utils/transform';
 import type { AnimationTypeState } from '../../render/utils/animation-state';
-import type { Visual } from '../../render/Visual';
+import type { Visual } from '../../render/Visual.svelte';
 import type { TargetAndTransition } from '../../types';
 import type { VisualAnimationOptions } from './types';
 import { animateMotionValue } from './motion-value';
